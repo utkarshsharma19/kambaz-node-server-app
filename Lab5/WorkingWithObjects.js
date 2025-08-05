@@ -20,7 +20,18 @@ const assignment = {
       };
       app.get("/lab5/assignment/title/:newTitle", setAssignmentTitle);
 
-      
+
     app.get("/lab5/assignment", getAssignment);
+
+      /* ---------- NEW: score & completed ---------- */
+  app.get("/lab5/assignment/score/:score", (req, res) => {
+        assignment.score = Number(req.params.score);
+        res.json(assignment);
+      });
+    
+      app.get("/lab5/assignment/completed/:completed", (req, res) => {
+        assignment.completed = req.params.completed === "true";
+        res.json(assignment);
+      });
   };
   
