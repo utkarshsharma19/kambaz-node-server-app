@@ -1,4 +1,3 @@
-
 const module = {
     id: "M101",
     name: "Intro to Express",
@@ -7,13 +6,13 @@ const module = {
   };
   
   export default function ModuleRoutes(app) {
-    /* read ------------------------------------------------------------------ */
-    app.get("/lab5/module", (_, res) => res.json(module));
-    app.get("/lab5/module/name", (_, res) => res.json(module.name));
+    /* read --------------------------------------------------------------- */
+    app.get("/lab5/module",       (_req, res) => res.json(module));
+    app.get("/lab5/module/name",  (_req, res) => res.json(module.name));
   
-    /* update ---------------------------------------------------------------- */
-    app.get("/lab5/module/name/:newName", (req, res) => {
-      module.name = req.params.newName;
+    /* update ------------------------------------------------------------- */
+    app.get("/lab5/module/name/:new", (req, res) => {
+      module.name = req.params.new;
       res.json(module);
     });
   
@@ -22,4 +21,3 @@ const module = {
       res.json(module);
     });
   }
-  

@@ -1,6 +1,6 @@
 import QueryParameters from "./QueryParameters.js";
 import PathParameters from "./PathParameters.js";
-import ModuleRoutes from "../Kambaz/Modules/route.js";
+import ModuleRoutes from "./ModuleRoutes.js";
 import WorkingWithArrays from "./WorkingWithArrays.js";
 import WorkingWithObjects from "./WorkingWithObjects.js";
 
