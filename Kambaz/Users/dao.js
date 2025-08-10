@@ -1,41 +1,34 @@
-import db from "../Database/index.js";
+import model from "./model.js";
 import { v4 as uuidv4 } from "uuid";
 
+/* ---------- CREATE ---------- */
 export const createUser = (user) => {
-  const newUser = { ...user, _id: uuidv4() };
-  db.users.push(newUser);
-  return newUser;
+  // ensure client _id doesn't interfere
+  const { _id, ...rest } = user || {};
+  const newUser = { ...rest, _id: uuidv4() };
+  return model.create(newUser);
 };
 
-export const findAllUsers = () => db.users;
-
-export const findUserById = (userId) =>
-  db.users.find((user) => user._id === userId);
-
-export const findUserByUsername = (username) =>
-  db.users.find((user) => user.username === username);
-
+/* ---------- READ ---------- */
+export const findAllUsers = () => model.find();
+export const findUserById = (userId) => model.findById(userId);
+export const findUsersByRole = (role) => model.find({ role });
+export const findUsersByPartialName = (partialName) => {
+  const regex = new RegExp(partialName, "i");
+  return model.find({
+    $or: [{ firstName: { $regex: regex } }, { lastName: { $regex: regex } }],
+  });
+};
+export const findUserByUsername = (username) => model.findOne({ username });
 export const findUserByCredentials = (username, password) =>
-  db.users.find(
-    (user) => user.username === username && user.password === password
-  );
+  model.findOne({ username, password }); // (hash in real apps)
 
-export const updateUser = (userId, updatedUser) => {
-  const index = db.users.findIndex((u) => u._id === userId);
-  if (index === -1) return null;
-  db.users[index] = { ...db.users[index], ...updatedUser };
-  return db.users[index];
-};
+/* ---------- UPDATE ---------- */
+export const updateUser = (userId, user) =>
+  model.updateOne({ _id: userId }, { $set: user });
 
-export const deleteUser = (userId) => {
-  const index = db.users.findIndex((u) => u._id === userId);
-  if (index !== -1) {
-    db.users.splice(index, 1);
-    return true;
-  }
-  return false;
-};
+/* ---------- DELETE ---------- */
+export const deleteUser = (userId) => model.deleteOne({ _id: userId });
 
-
-export const findManyByIds = (ids) =>
-  db.users.filter((u) => ids.includes(u._id));
+/* ---------- helpers ---------- */
+export const findManyByIds = (ids) => model.find({ _id: { $in: ids } });
