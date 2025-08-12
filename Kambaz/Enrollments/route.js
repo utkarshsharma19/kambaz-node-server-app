@@ -1,26 +1,27 @@
 import * as dao from "./dao.js";
 
 export default function EnrollmentRoutes(app) {
-  /* current user ─ list */
-  app.get("/api/users/current/enrollments", (req, res) => {
+  // list mappings for the current user (used by your myEnrollments() client)
+  app.get("/api/users/current/enrollments", async (req, res) => {
     const me = req.session.currentUser;
     if (!me) return res.sendStatus(401);
-    res.json(dao.findCoursesForUser(me._id));
+    const rows = await dao.listForUser(me._id);
+    res.json(rows);
   });
 
-  /* enroll  (body: { course }) */
-  app.post("/api/enrollments", (req, res) => {
+  // enroll (body: { course })
+  app.post("/api/enrollments", async (req, res) => {
     const me = req.session.currentUser;
     if (!me) return res.sendStatus(401);
-    const enrollment = dao.enrollUserInCourse(me._id, req.body.course);
-    res.json(enrollment);
+    const row = await dao.enrollUserInCourse(me._id, req.body.course);
+    res.json(row);
   });
 
-  /* unenroll */
-  app.delete("/api/enrollments/:courseId", (req, res) => {
+  // unenroll
+  app.delete("/api/enrollments/:courseId", async (req, res) => {
     const me = req.session.currentUser;
     if (!me) return res.sendStatus(401);
-    dao.unenrollUserFromCourse(me._id, req.params.courseId);
+    await dao.unenrollUserFromCourse(me._id, req.params.courseId);
     res.sendStatus(200);
   });
 }

@@ -1,24 +1,27 @@
-import Database from "../Database/index.js";
-import { v4 as uuidv4 } from "uuid";  
-export function findModulesForCourse(courseId) {
-  const { modules } = Database;
-  return modules.filter((module) => module.course === courseId);
-}
-export function createModule(module) {
-    const newModule = { ...module, _id: uuidv4() };
-    Database.modules = [...Database.modules, newModule];
-    return newModule;
-  }
+import model from "./model.js";
+import { v4 as uuidv4 } from "uuid";
 
-  export function deleteModule(moduleId) {
-    const { modules } = Database;
-    Database.modules = modules.filter((module) => module._id !== moduleId);
-   }
-   
-   export function updateModule(moduleId, moduleUpdates) {
-    const { modules } = Database;
-    const module = modules.find((module) => module._id === moduleId);
-    Object.assign(module, moduleUpdates);
-    return module;
-  }
-  
+// READ
+export function findModulesForCourse(courseId) {
+  return model.find({ course: courseId });
+}
+
+// CREATE (return created doc)
+export function createModule(module) {
+  const newModule = { ...module, _id: uuidv4() };
+  return model.create(newModule);
+}
+
+// UPDATE — return updated doc (so UI can replace it)
+export function updateModule(moduleId, updates) {
+  return model.findByIdAndUpdate(
+    moduleId,
+    { $set: updates },
+    { new: true }
+  );
+}
+
+// DELETE
+export function deleteModule(moduleId) {
+  return model.deleteOne({ _id: moduleId });
+}

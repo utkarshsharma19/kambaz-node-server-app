@@ -10,7 +10,7 @@ const sanitize = (doc) => {
 };
 
 export default function UserRoutes(app) {
-  /* ─────── auth ─────── */
+  /* ---------- authentication ---------- */
   const signup = async (req, res) => {
     const existing = await dao.findUserByUsername(req.body.username);
     if (existing) return res.status(400).json({ message: "Username taken" });
@@ -36,7 +36,7 @@ export default function UserRoutes(app) {
     res.json(req.session.currentUser);
   };
 
-  /* ─────── queries & CRUD ─────── */
+  /* ---------- users queries & CRUD ---------- */
   const findAllUsers = async (req, res) => {
     const { role, name } = req.query;
     if (role) {
@@ -57,24 +57,17 @@ export default function UserRoutes(app) {
   };
 
   const createUser = async (req, res) => {
-    try {
-      const user = await dao.createUser(req.body);
-      res.json(sanitize(user));
-    } catch (e) {
-      console.error("Create user error:", e);
-      res.status(500).json({ message: "Failed to create user" });
-    }
+    const user = await dao.createUser(req.body);
+    res.json(sanitize(user));
   };
 
   const updateUser = async (req, res) => {
     const { userId } = req.params;
     const updates = req.body;
     await dao.updateUser(userId, updates);
-
-    // keep session in sync if editing yourself
-    const currentUser = req.session.currentUser;
-    if (currentUser && currentUser._id === userId) {
-      req.session.currentUser = sanitize({ ...currentUser, ...updates });
+    const me = req.session.currentUser;
+    if (me && me._id === userId) {
+      req.session.currentUser = sanitize({ ...me, ...updates });
     }
     res.json(req.session.currentUser || { status: "ok" });
   };
@@ -84,38 +77,60 @@ export default function UserRoutes(app) {
     res.json(status);
   };
 
-  /* ─────── enrolled-courses helper ─────── */
-  const findCoursesForEnrolledUser = async (req, res) => {
-    let { userId } = req.params;
-    if (userId === "current") {
-      const me = req.session.currentUser;
-      if (!me) return res.sendStatus(401);
-      userId = me._id;
+  /* ---------- many-to-many: courses for a user ---------- */
+  const findCoursesForUser = async (req, res) => {
+    const currentUser = req.session.currentUser;
+    if (!currentUser) return res.sendStatus(401);
+
+    // ADMIN sees all courses
+    if (currentUser.role === "ADMIN") {
+      const courses = await courseDao.findAllCourses();
+      return res.json(courses);
     }
-    const courses = await courseDao.findCoursesForEnrolledUser(userId);
+
+    let { uid } = req.params;
+    if (uid === "current") uid = currentUser._id;
+
+    const courses = await enrollmentsDao.findCoursesForUser(uid);
     res.json(courses);
   };
 
-  const createCourseForCurrent = async (req, res) => {
-    const me = req.session.currentUser;
-    if (!me) return res.sendStatus(401);
-    const newCourse = await courseDao.createCourse(req.body);
-    await enrollmentsDao.enrollUserInCourse(me._id, newCourse._id);
-    res.json(newCourse);
+  /* ---------- enroll / unenroll ---------- */
+  const enrollUserInCourse = async (req, res) => {
+    let { uid, cid } = req.params;
+    if (uid === "current") {
+      const me = req.session.currentUser;
+      if (!me) return res.sendStatus(401);
+      uid = me._id;
+    }
+    const status = await enrollmentsDao.enrollUserInCourse(uid, cid);
+    res.send(status);
   };
 
-  /* ─────── route table ─────── */
-  app.post("/api/users/signup", signup);
-  app.post("/api/users/signin", signin);
-  app.post("/api/users/signout", signout);
-  app.post("/api/users/profile", profile);
+  const unenrollUserFromCourse = async (req, res) => {
+    let { uid, cid } = req.params;
+    if (uid === "current") {
+      const me = req.session.currentUser;
+      if (!me) return res.sendStatus(401);
+      uid = me._id;
+    }
+    const status = await enrollmentsDao.unenrollUserFromCourse(uid, cid);
+    res.send(status);
+  };
 
-  app.get   ("/api/users",            findAllUsers);
-  app.get   ("/api/users/:userId",    findUserById);
-  app.post  ("/api/users",            createUser);     // ← open create (no faculty guard)
-  app.put   ("/api/users/:userId",    updateUser);
+  /* ---------- route table ---------- */
+  app.post ("/api/users/signup",  signup);
+  app.post ("/api/users/signin",  signin);
+  app.post ("/api/users/signout", signout);
+  app.post ("/api/users/profile", profile);
+
+  app.get  ("/api/users",             findAllUsers);
+  app.get  ("/api/users/:userId",     findUserById);
+  app.post ("/api/users",             createUser);
+  app.put  ("/api/users/:userId",     updateUser);
   app.delete("/api/users/:userId",    deleteUser);
 
-  app.get   ("/api/users/:userId/courses", findCoursesForEnrolledUser);
-  app.post  ("/api/users/current/courses",  createCourseForCurrent);
+  app.get  ("/api/users/:uid/courses",        findCoursesForUser);
+  app.post ("/api/users/:uid/courses/:cid",   enrollUserInCourse);
+  app.delete("/api/users/:uid/courses/:cid",  unenrollUserFromCourse);
 }
