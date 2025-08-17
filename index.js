@@ -45,7 +45,9 @@ const whitelist = [
   "http://localhost:5173",                            // Vite dev
   process.env.NETLIFY_URL,                            // e.g. https://stellular-melba-b76f94.netlify.app
   "https://glowing-griffin-af9ac8.netlify.app",       // your other Netlify preview
-  "https://stellular-melba-b76f94.netlify.app",       // explicit prod URL
+  "https://stellular-melba-b76f94.netlify.app",  
+  "https://bright-gelato-c5ab8a.netlify.app",
+      // explicit prod URL
 ].filter(Boolean);
 
 // Single source of truth for both simple + preflight
